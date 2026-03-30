@@ -49,6 +49,7 @@ fun HomeScreen(
     onPickLength: (Int) -> Unit
 ) {
     val hardMode by viewModel.hardMode.collectAsState()
+    val haptic = LocalHapticFeedback.current
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -86,7 +87,10 @@ fun HomeScreen(
 
             // Colorful Hard Mode Toggle
             Button(
-                onClick = { viewModel.toggleHardMode() },
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.toggleHardMode()
+                },
                 modifier = Modifier
                     .padding(bottom = 32.dp)
                     .height(48.dp),

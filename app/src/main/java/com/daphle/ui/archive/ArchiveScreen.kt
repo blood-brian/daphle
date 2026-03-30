@@ -76,7 +76,10 @@ fun ArchiveScreen(
             TopAppBar(
                 title = { Text("${viewModel.wordLength}-letter puzzles") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },

@@ -96,7 +96,10 @@ fun GameScreen(
                     Text("Puzzle #${viewModel.puzzleIndex + 1} · ${viewModel.wordLength} letters")
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
