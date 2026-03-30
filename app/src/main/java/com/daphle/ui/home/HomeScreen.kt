@@ -1,21 +1,28 @@
 package com.daphle.ui.home
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,7 +42,7 @@ fun HomeScreen(onPickLength: (Int) -> Unit) {
         ) {
             Text(
                 text = "Daphle",
-                fontSize = 48.sp,
+                fontSize = 56.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -48,41 +55,54 @@ fun HomeScreen(onPickLength: (Int) -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(64.dp))
 
-            listOf(3, 4, 5).forEach { length ->
-                LengthButton(
-                    length = length,
-                    onClick = { onPickLength(length) },
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                listOf(3, 4, 5).forEach { length ->
+                    LengthSelector(
+                        length = length,
+                        onClick = { onPickLength(length) },
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun LengthButton(length: Int, onClick: () -> Unit) {
-    Button(
+private fun LengthSelector(length: Int, onClick: () -> Unit) {
+    Surface(
         onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
+            .shadow(4.dp, RoundedCornerShape(16.dp))
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(length) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.White)
+                            .border(2.dp, Color(0xFFCCCCCC), RoundedCornerShape(6.dp))
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "$length letters",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = "6 tries",
-                fontSize = 14.sp,
+                text = "$length LETTERS",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
