@@ -1,7 +1,6 @@
 # Daphle — Wordle Clone Spec
 
-Developing a Wordle clone requires implementing core gameplay mechanics, a responsive grid interface, and state management for tracking guesses and letter accuracy. [1, 2]
-
+Developing a Wordle clone requires implementing core gameplay mechanics, a responsive grid interface, and state management for tracking guesses and letter accuracy. This is for a 4-year old who loves Wordle. She wants to play a 3 and 4 letter variant.
 ---
 
 ## 1. Core Game Mechanics
@@ -10,7 +9,7 @@ Developing a Wordle clone requires implementing core gameplay mechanics, a respo
 - **Attempts:** The user is allowed 6 attempts to guess the word.
 - **Game Loop:** The game selects a random word from a predefined dictionary at the start of each session.
 - **Validation:** Every guessed word must exist in a valid dictionary (e.g., a list of 5-letter words).
-- **End Conditions:** The game ends when the user correctly guesses the word or runs out of attempts. [3, 4, 5, 6, 7]
+- **End Conditions:** The game ends when the user correctly guesses the word or runs out of attempts.
 
 ---
 
@@ -20,7 +19,7 @@ The game must analyze each guess and provide immediate visual feedback:
 
 - **Green (Correct):** The letter is in the correct position.
 - **Yellow (Present):** The letter is in the word but in the wrong position.
-- **Gray (Absent):** The letter is not in the word. [6, 10, 11, 12]
+- **Gray (Absent):** The letter is not in the word.
 
 ---
 
@@ -28,22 +27,67 @@ The game must analyze each guess and provide immediate visual feedback:
 
 - **Game Board:** A grid of 5×6 (5 letters, 6 rows/attempts).
 - **On-Screen Keyboard:** A QWERTY-style keyboard that highlights the status of letters used across all attempts (green/yellow/gray).
-- **Animations:** Flip animation for tiles upon revealing colors and a subtle shake animation for invalid words. [6, 13, 14, 15, 16]
+- **Animations:** Flip animation for tiles upon revealing colors and a subtle shake animation for invalid words.
 
 ---
 
 ## 4. Technical Stack
 
-- **Mobile:** Native Android with Kotlin + Jetpack Compose. [3, 7, 17, 18, 19, 20]
+- **Mobile:** Native Android with Kotlin + Jetpack Compose.
 
 ---
 
-## 5. Essential Features & Logic
+## 5. Architecture — Clean Architecture + MVVM
+
+The most maintainable approach is Clean Architecture combined with MVVM. This allows swapping the UI or storage layer without touching game logic. [A1, A2]
+
+### Key Modules (Gradle-based Separation)
+
+- **`:core:domain` (The Brain):** Pure Kotlin, zero Android dependencies. Contains the `WordleGame` class, guess validation logic, and repository interfaces.
+- **`:core:data` (The Library):** Implements dictionary and storage logic. Depends on `:domain` and handles fetching words from assets or a remote API.
+- **`:feature:game` (The UI):** Contains the ViewModel and Jetpack Compose UI. Communicates with the domain layer only via Use Cases. [A2, A4, A5, A6]
+
+### Information Flow
+
+1. **User Action:** Player taps a key on the on-screen keyboard.
+2. **ViewModel:** UI calls `viewModel.submitGuess()`.
+3. **Use Case (Domain):** ViewModel triggers `SubmitGuessUseCase`, which asks the Repository Interface to validate the word.
+4. **Repository (Data):** The implementation (in `:data`) checks the word list.
+5. **State Update:** If valid, the Use Case updates `GameState` (an immutable Kotlin `StateFlow`).
+6. **Persistence:** The Repository saves the new state via Room or DataStore.
+7. **Reactive UI:** The UI, observing the `StateFlow`, automatically updates the grid and plays animations. [A2]
+
+### Repository Pattern for Persistence
+
+**Interface (in `:domain`):**
+```kotlin
+interface GameRepository {
+    suspend fun saveGame(state: GameState)
+    suspend fun getGame(): GameState?
+}
+```
+
+**Implementation (in `:data`):** Start with `SharedPrefsRepository`. Later, swap in a `RoomRepository` via Hilt/Koin with no changes to UI or logic code. [A2, A8]
+
+### Recommended Project Structure
+
+```
+project-root/
+├── app/                   (glue code)
+├── core/
+│   ├── domain/            (entities, use cases, repository interfaces)
+│   └── data/              (Room DB, repository implementations)
+└── features/
+    └── game/              (Compose UI, ViewModels)
+```
+
+---
+
+## 6. Essential Features & Logic
 
 - **State Management:** Track the current row (turn), the current letter, the grid contents, and the on-screen keyboard state.
 - **Input Handling:** Listen to on-screen button clicks (and optionally physical keyboard events).
 - **Word Storage:** A list of valid words for checking, and a smaller list of potential hidden answers.
-- **Sharing:** A button to copy the results as emojis (e.g., 🟩⬜🟨) to the clipboard. [5, 13, 15, 21, 22]
 
 ---
 
@@ -58,12 +102,23 @@ The game must analyze each guess and provide immediate visual feedback:
 ## 6. Data Requirements
 
 - `words_valid.txt` (or `.json`): A list of acceptable words (~10,000+).
-- `words_answers.txt` (or `.json`): A smaller list of potential target words (~2,000–3,000). [6, 15]
-
----
+- `words_answers.txt` (or `.json`): A smaller list of potential target words (~2,000–3,000). 
+-  We should find through web search or create a list of the most common 3, 4, and 5-letter words to use in crating these lists.
+-  We can also look at language learning, and learning-to-read apps for lists of words. Some of the current 5-letter words in the current Wordle answer list are a bit esoteric for a 4-year old.
 
 ## References
 
+### Architecture
+- [A1] https://github.com/vmadalin/android-modular-architecture
+- [A2] https://medium.com/droidstack/clean-architecture-in-android-advanced-guide-614637cd25b3
+- [A3] https://developer.android.com/studio/projects
+- [A4] https://developer.android.com/topic/architecture/recommendations
+- [A5] https://proandroiddev.com/from-monolith-to-modules-modernizing-your-android-app-architecture-2f99338e8d27
+- [A6] https://abifarhan.medium.com/modularization-in-android-development-architecting-for-scale-in-high-traffic-apps-214cf92d6a08
+- [A7] https://dev.to/artsiom_seliuzhytski/modularisation-in-android-engineering-scalable-maintainable-projects-3ff0
+- [A8] https://proandroiddev.com/android-components-architecture-in-a-modular-word-7414a0631969
+
+### Wordle / Game Design
 1. https://www.osiztechnologies.com/blog/wordle-clone-script
 2. https://thecodingchannel.hashnode.dev/full-tutorial-we-build-a-python-wordle-clone-discord-bot-with-disnake
 3. https://realpython.com/python-wordle-clone/
