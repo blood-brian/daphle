@@ -14,8 +14,8 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 /**
  * Persists:
- * - Completion state per puzzle (WIN / LOSS / IN_PROGRESS / NONE)
- * - In-progress guesses for the current puzzle per word length
+ * - Completion state per puzzle (WIN / LOSS / NONE)
+ * - In-progress guesses per puzzle
  * - Unlocked batch index per word length
  * - Hard mode setting
  */
@@ -28,11 +28,8 @@ class GameProgressStore(private val context: Context) {
         private fun completionKey(length: Int, puzzleIndex: Int) =
             stringPreferencesKey("completion_${length}_$puzzleIndex")
 
-        private fun inProgressGuessesKey(length: Int) =
-            stringPreferencesKey("in_progress_guesses_$length")
-
-        private fun inProgressIndexKey(length: Int) =
-            intPreferencesKey("in_progress_index_$length")
+        private fun inProgressGuessesKey(length: Int, puzzleIndex: Int) =
+            stringPreferencesKey("in_progress_guesses_${length}_$puzzleIndex")
 
         private fun unlockedBatchKey(length: Int) =
             intPreferencesKey("unlocked_batch_$length")
@@ -56,8 +53,17 @@ class GameProgressStore(private val context: Context) {
     fun allCompletionsFlow(length: Int, count: Int): Flow<List<PuzzleResult>> =
         context.dataStore.data.map { prefs ->
             (0 until count).map { i ->
-                prefs[completionKey(length, i)]?.let { PuzzleResult.valueOf(it) }
-                    ?: PuzzleResult.NONE
+                val completion = prefs[completionKey(length, i)]?.let { PuzzleResult.valueOf(it) }
+                if (completion != null && completion != PuzzleResult.NONE) {
+                    completion
+                } else {
+                    // If not completed, check if it's in progress
+                    if (prefs.contains(inProgressGuessesKey(length, i))) {
+                        PuzzleResult.IN_PROGRESS
+                    } else {
+                        PuzzleResult.NONE
+                    }
+                }
             }
         }
 
@@ -75,28 +81,24 @@ class GameProgressStore(private val context: Context) {
         }
     }
 
-    // ----- In-progress game -----
+    // ----- In-progress games -----
 
     suspend fun saveInProgress(length: Int, puzzleIndex: Int, guesses: List<String>) {
         context.dataStore.edit { prefs ->
-            prefs[inProgressIndexKey(length)] = puzzleIndex
-            prefs[inProgressGuessesKey(length)] = guesses.joinToString(",")
+            prefs[inProgressGuessesKey(length, puzzleIndex)] = guesses.joinToString(",")
         }
     }
 
-    suspend fun clearInProgress(length: Int) {
+    suspend fun clearInProgress(length: Int, puzzleIndex: Int) {
         context.dataStore.edit { prefs ->
-            prefs.remove(inProgressIndexKey(length))
-            prefs.remove(inProgressGuessesKey(length))
+            prefs.remove(inProgressGuessesKey(length, puzzleIndex))
         }
     }
 
-    fun inProgressFlow(length: Int): Flow<InProgressGame?> =
+    fun inProgressFlow(length: Int, puzzleIndex: Int): Flow<List<String>> =
         context.dataStore.data.map { prefs ->
-            val index = prefs[inProgressIndexKey(length)] ?: return@map null
-            val guessesRaw = prefs[inProgressGuessesKey(length)] ?: return@map null
-            val guesses = if (guessesRaw.isBlank()) emptyList() else guessesRaw.split(",")
-            InProgressGame(puzzleIndex = index, guesses = guesses)
+            val guessesRaw = prefs[inProgressGuessesKey(length, puzzleIndex)] ?: return@map emptyList()
+            if (guessesRaw.isBlank()) emptyList() else guessesRaw.split(",")
         }
 
     // ----- Hard mode -----
@@ -114,5 +116,3 @@ class GameProgressStore(private val context: Context) {
 }
 
 enum class PuzzleResult { NONE, IN_PROGRESS, WIN, LOSS }
-
-data class InProgressGame(val puzzleIndex: Int, val guesses: List<String>)

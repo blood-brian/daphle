@@ -25,11 +25,6 @@ class PuzzleRepository(context: Context) {
         ) { completions, unlockedBatch ->
             val unlockedCount = (unlockedBatch + 1) * GameProgressStore.BATCH_SIZE
 
-            // Check if we should unlock the next batch: all puzzles in current batch completed
-            val currentBatchEnd = minOf(unlockedCount, count)
-            val currentBatchStart = unlockedBatch * GameProgressStore.BATCH_SIZE
-            // (unlocking is triggered from ArchiveViewModel when needed)
-
             completions.mapIndexed { i, result ->
                 PuzzleInfo(
                     index = i,
@@ -55,11 +50,11 @@ class PuzzleRepository(context: Context) {
         store.saveInProgress(length, index, guesses)
     }
 
-    suspend fun clearInProgress(length: Int) {
-        store.clearInProgress(length)
+    suspend fun clearInProgress(length: Int, index: Int) {
+        store.clearInProgress(length, index)
     }
 
-    fun inProgressFlow(length: Int) = store.inProgressFlow(length)
+    fun inProgressFlow(length: Int, index: Int) = store.inProgressFlow(length, index)
 
     fun unlockedBatchFlow(length: Int) = store.unlockedBatchFlow(length)
 

@@ -45,11 +45,9 @@ class GameViewModel(
                 hardMode = hardMode,
             )
 
-            // Restore in-progress guesses if any
-            val inProgress = repository.inProgressFlow(wordLength).first()
-            if (inProgress != null && inProgress.puzzleIndex == puzzleIndex) {
-                inProgress.guesses.forEach { engine.submitGuess(it) }
-            }
+            // Restore in-progress guesses for THIS specific puzzle
+            val inProgressGuesses = repository.inProgressFlow(wordLength, puzzleIndex).first()
+            inProgressGuesses.forEach { engine.submitGuess(it) }
 
             _uiState.value = GameUiState(
                 gameState = engine.currentState,
@@ -102,7 +100,7 @@ class GameViewModel(
                             newState.guesses.map { it.word },
                         )
                     } else {
-                        repository.clearInProgress(wordLength)
+                        repository.clearInProgress(wordLength, puzzleIndex)
                         repository.saveCompletion(
                             wordLength,
                             puzzleIndex,
