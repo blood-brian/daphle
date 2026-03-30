@@ -18,9 +18,8 @@ class PuzzleRepository(context: Context) {
 
     fun puzzlesFlow(length: Int): Flow<List<PuzzleInfo>> {
         val answers = wordList.answersForLength(length)
-        val count = answers.size
         return combine(
-            store.allCompletionsFlow(length, count),
+            store.allCompletionsFlow(answers),
             store.unlockedBatchFlow(length),
         ) { completions, unlockedBatch ->
             val unlockedCount = (unlockedBatch + 1) * GameProgressStore.BATCH_SIZE
@@ -43,18 +42,24 @@ class PuzzleRepository(context: Context) {
         wordList.isValidGuess(word, length)
 
     suspend fun saveCompletion(length: Int, index: Int, result: PuzzleResult) {
-        store.setCompletion(length, index, result)
+        val word = answerAt(length, index)
+        store.setCompletion(word, result)
     }
 
     suspend fun saveInProgress(length: Int, index: Int, guesses: List<String>) {
-        store.saveInProgress(length, index, guesses)
+        val word = answerAt(length, index)
+        store.saveInProgress(word, guesses)
     }
 
     suspend fun clearInProgress(length: Int, index: Int) {
-        store.clearInProgress(length, index)
+        val word = answerAt(length, index)
+        store.clearInProgress(word)
     }
 
-    fun inProgressFlow(length: Int, index: Int) = store.inProgressFlow(length, index)
+    fun inProgressFlow(length: Int, index: Int): Flow<List<String>> {
+        val word = answerAt(length, index)
+        return store.inProgressFlow(word)
+    }
 
     fun unlockedBatchFlow(length: Int) = store.unlockedBatchFlow(length)
 

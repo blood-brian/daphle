@@ -14,8 +14,8 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 /**
  * Persists:
- * - Completion state per puzzle (WIN / LOSS / NONE)
- * - In-progress guesses per puzzle
+ * - Completion state per word (WIN / LOSS / NONE)
+ * - In-progress guesses per word
  * - Unlocked batch index per word length
  * - Hard mode setting
  */
@@ -25,11 +25,11 @@ class GameProgressStore(private val context: Context) {
         const val BATCH_SIZE = 10
         private val HARD_MODE_KEY = stringPreferencesKey("hard_mode")
 
-        private fun completionKey(length: Int, puzzleIndex: Int) =
-            stringPreferencesKey("completion_${length}_$puzzleIndex")
+        private fun completionKey(word: String) =
+            stringPreferencesKey("completion_${word.uppercase()}")
 
-        private fun inProgressGuessesKey(length: Int, puzzleIndex: Int) =
-            stringPreferencesKey("in_progress_guesses_${length}_$puzzleIndex")
+        private fun inProgressGuessesKey(word: String) =
+            stringPreferencesKey("in_progress_guesses_${word.uppercase()}")
 
         private fun unlockedBatchKey(length: Int) =
             intPreferencesKey("unlocked_batch_$length")
@@ -37,28 +37,28 @@ class GameProgressStore(private val context: Context) {
 
     // ----- Completion state -----
 
-    suspend fun setCompletion(length: Int, puzzleIndex: Int, result: PuzzleResult) {
+    suspend fun setCompletion(word: String, result: PuzzleResult) {
         context.dataStore.edit { prefs ->
-            prefs[completionKey(length, puzzleIndex)] = result.name
+            prefs[completionKey(word)] = result.name
         }
     }
 
-    fun completionFlow(length: Int, puzzleIndex: Int): Flow<PuzzleResult> =
+    fun completionFlow(word: String): Flow<PuzzleResult> =
         context.dataStore.data.map { prefs ->
-            prefs[completionKey(length, puzzleIndex)]?.let { PuzzleResult.valueOf(it) }
+            prefs[completionKey(word)]?.let { PuzzleResult.valueOf(it) }
                 ?: PuzzleResult.NONE
         }
 
-    /** Returns a flow of completion results for all puzzles of a given length up to [count]. */
-    fun allCompletionsFlow(length: Int, count: Int): Flow<List<PuzzleResult>> =
+    /** Returns a flow of completion results for a list of words. */
+    fun allCompletionsFlow(words: List<String>): Flow<List<PuzzleResult>> =
         context.dataStore.data.map { prefs ->
-            (0 until count).map { i ->
-                val completion = prefs[completionKey(length, i)]?.let { PuzzleResult.valueOf(it) }
+            words.map { word ->
+                val completion = prefs[completionKey(word)]?.let { PuzzleResult.valueOf(it) }
                 if (completion != null && completion != PuzzleResult.NONE) {
                     completion
                 } else {
                     // If not completed, check if it's in progress
-                    if (prefs.contains(inProgressGuessesKey(length, i))) {
+                    if (prefs.contains(inProgressGuessesKey(word))) {
                         PuzzleResult.IN_PROGRESS
                     } else {
                         PuzzleResult.NONE
@@ -83,21 +83,21 @@ class GameProgressStore(private val context: Context) {
 
     // ----- In-progress games -----
 
-    suspend fun saveInProgress(length: Int, puzzleIndex: Int, guesses: List<String>) {
+    suspend fun saveInProgress(word: String, guesses: List<String>) {
         context.dataStore.edit { prefs ->
-            prefs[inProgressGuessesKey(length, puzzleIndex)] = guesses.joinToString(",")
+            prefs[inProgressGuessesKey(word)] = guesses.joinToString(",")
         }
     }
 
-    suspend fun clearInProgress(length: Int, puzzleIndex: Int) {
+    suspend fun clearInProgress(word: String) {
         context.dataStore.edit { prefs ->
-            prefs.remove(inProgressGuessesKey(length, puzzleIndex))
+            prefs.remove(inProgressGuessesKey(word))
         }
     }
 
-    fun inProgressFlow(length: Int, puzzleIndex: Int): Flow<List<String>> =
+    fun inProgressFlow(word: String): Flow<List<String>> =
         context.dataStore.data.map { prefs ->
-            val guessesRaw = prefs[inProgressGuessesKey(length, puzzleIndex)] ?: return@map emptyList()
+            val guessesRaw = prefs[inProgressGuessesKey(word)] ?: return@map emptyList()
             if (guessesRaw.isBlank()) emptyList() else guessesRaw.split(",")
         }
 
