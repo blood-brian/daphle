@@ -43,7 +43,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -62,6 +64,7 @@ fun GameScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val haptic = LocalHapticFeedback.current
 
     // Handle horizontal swipe to go back
     var totalDrag by remember { mutableFloatStateOf(0f) }
@@ -79,6 +82,7 @@ fun GameScreen(
                 onDragStart = { totalDrag = 0f },
                 onDragEnd = {
                     if (totalDrag > 150) { // Threshold for swipe-to-back
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onBack()
                     }
                 },
@@ -146,9 +150,18 @@ fun GameScreen(
             // QWERTY Keyboard
             QwertyKeyboard(
                 keyColors = state.keyboardColors,
-                onKey = viewModel::onKey,
-                onBackspace = viewModel::onBackspace,
-                onEnter = viewModel::onSubmit,
+                onKey = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    viewModel.onKey(it)
+                },
+                onBackspace = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.onBackspace()
+                },
+                onEnter = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.onSubmit()
+                },
                 enabled = state.gameState.status == GameStatus.IN_PROGRESS,
             )
         }

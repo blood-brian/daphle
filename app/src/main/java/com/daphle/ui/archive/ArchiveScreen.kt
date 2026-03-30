@@ -34,7 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +52,7 @@ fun ArchiveScreen(
     onPuzzleTap: (puzzleIndex: Int) -> Unit,
 ) {
     val puzzles by viewModel.puzzles.collectAsState()
+    val haptic = LocalHapticFeedback.current
 
     // Handle horizontal swipe to go back
     var totalDrag by remember { mutableFloatStateOf(0f) }
@@ -60,6 +63,7 @@ fun ArchiveScreen(
                 onDragStart = { totalDrag = 0f },
                 onDragEnd = {
                     if (totalDrag > 150) { // Threshold for swipe-to-back
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onBack()
                     }
                 },
@@ -100,6 +104,7 @@ fun ArchiveScreen(
 
 @Composable
 private fun PuzzleTile(puzzle: PuzzleInfo, onClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
     val (bg, fg, icon) = when {
         !puzzle.isUnlocked -> Triple(Color(0xFFE0E0E0), Color(0xFF9E9E9E), "🔒")
         puzzle.result == PuzzleResult.WIN -> Triple(Color(0xFF6AAA64), Color.White, "✓")
@@ -118,7 +123,10 @@ private fun PuzzleTile(puzzle: PuzzleInfo, onClick: () -> Unit) {
                 color = Color(0xFFDDDDDD),
                 shape = RoundedCornerShape(8.dp),
             )
-            .clickable(enabled = puzzle.isUnlocked, onClick = onClick),
+            .clickable(enabled = puzzle.isUnlocked) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
