@@ -27,18 +27,18 @@ class GameEngineTest {
     }
 
     @Nested
-    inner class MaxAttemptsByWordLength {
+    inner class MaxAttempts {
         @Test
-        fun `3-letter word gets 4 attempts`() {
+        fun `3-letter word gets 6 attempts`() {
             val engine = GameEngine("CAT", allWordsValid)
-            assertEquals(4, engine.currentState.maxAttempts)
+            assertEquals(6, engine.currentState.maxAttempts)
             assertEquals(3, engine.currentState.wordLength)
         }
 
         @Test
-        fun `4-letter word gets 5 attempts`() {
+        fun `4-letter word gets 6 attempts`() {
             val engine = GameEngine("BARK", allWordsValid)
-            assertEquals(5, engine.currentState.maxAttempts)
+            assertEquals(6, engine.currentState.maxAttempts)
             assertEquals(4, engine.currentState.wordLength)
         }
 
@@ -96,16 +96,18 @@ class GameEngineTest {
     inner class GameOver {
         @Test
         fun `exhaust all attempts without correct guess results in LOST`() {
-            val engine = GameEngine("CAT", allWordsValid)  // 3 letters = 4 attempts
+            val engine = GameEngine("CAT", allWordsValid)  // 6 attempts for all
             engine.submitGuess("DOG")
             engine.submitGuess("BAT")
             engine.submitGuess("RAT")
-            val result = engine.submitGuess("HAT")
+            engine.submitGuess("HAT")
+            engine.submitGuess("MAT")
+            val result = engine.submitGuess("SAT")
 
             assertTrue(result is GuessResult.Success)
             val state = (result as GuessResult.Success).state
             assertEquals(GameStatus.LOST, state.status)
-            assertEquals(4, state.guesses.size)
+            assertEquals(6, state.guesses.size)
         }
 
         @Test
@@ -124,8 +126,10 @@ class GameEngineTest {
             engine.submitGuess("DOG")
             engine.submitGuess("BAT")
             engine.submitGuess("RAT")
-            engine.submitGuess("HAT")  // 4th attempt, game lost
-            val result = engine.submitGuess("MAT")
+            engine.submitGuess("HAT")
+            engine.submitGuess("MAT")
+            engine.submitGuess("SAT")  // 6th attempt, game lost
+            val result = engine.submitGuess("FAT")
 
             assertTrue(result is GuessResult.Error)
             assertEquals("Game is already over", (result as GuessResult.Error).message)
@@ -168,7 +172,6 @@ class GameEngineTest {
         @Test
         fun `hard mode rejects guess that violates yellow constraint`() {
             // Target: CRANE
-            // Guess "RECAL" -- wait, let me think about this more carefully
             // Target: CRANE. Guess "NACRE" -> N:PRESENT, A:PRESENT, C:PRESENT, R:PRESENT, E:PRESENT
             // All letters present but wrong positions. Next guess must contain N, A, C, R, E somewhere.
             val engine = GameEngine("CRANE", allWordsValid, hardMode = true)

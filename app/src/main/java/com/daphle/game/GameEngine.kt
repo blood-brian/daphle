@@ -7,11 +7,7 @@ class GameEngine(
 ) {
     private val target = targetWord.uppercase()
     private val wordLength = target.length
-    private val maxAttempts = when (wordLength) {
-        3 -> 4
-        4 -> 5
-        else -> 6
-    }
+    private val maxAttempts = 6
 
     var currentState = GameState(
         targetWord = target,

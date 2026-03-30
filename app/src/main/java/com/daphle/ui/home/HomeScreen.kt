@@ -81,11 +81,7 @@ private fun LengthButton(length: Int, onClick: () -> Unit) {
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = when (length) {
-                    3 -> "4 tries"
-                    4 -> "5 tries"
-                    else -> "6 tries"
-                },
+                text = "6 tries",
                 fontSize = 14.sp,
             )
         }

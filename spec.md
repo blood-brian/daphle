@@ -7,10 +7,7 @@ A Wordle-style word guessing game for a 4-year-old who loves Wordle and is good 
 ## 1. Core Game Mechanics
 
 - **Word Lengths:** 3, 4, and 5 letters — all available from v1.
-- **Attempts:** Scaled by word length:
-  - 3-letter words → 4 attempts
-  - 4-letter words → 5 attempts
-  - 5-letter words → 6 attempts
+- **Attempts:** 6 attempts for all word lengths.
 - **Validation:** Every guess must be a real word from a kid-friendly word list. Invalid words are rejected with a shake animation.
 - **Feedback (Color Coding):**
   - **Green (Correct):** Letter is in the correct position.
@@ -55,10 +52,7 @@ There is no "daily word" or "free play" mode. All gameplay is through the archiv
 ## 4. User Interface
 
 ### Game Board
-- Dynamic grid sized to word length and attempts:
-  - 3-letter: 3 columns × 4 rows
-  - 4-letter: 4 columns × 5 rows
-  - 5-letter: 5 columns × 6 rows
+- Dynamic grid sized to word length and attempts: 6 rows for all word lengths.
 - Tiles flip to reveal color feedback after each guess.
 - Invalid word → shake animation on the current row.
 
