@@ -1,146 +1,207 @@
-# Daphle — Wordle Clone Spec
+# Daphle — Kid-Friendly Wordle Spec
 
-Developing a Wordle clone requires implementing core gameplay mechanics, a responsive grid interface, and state management for tracking guesses and letter accuracy. This is for a 4-year old who loves Wordle. She wants to play a 3 and 4 letter variant.
+A Wordle-style word guessing game for a 4-year-old who loves Wordle and is good with real words. Built as a native Android app with Kotlin + Jetpack Compose.
+
 ---
 
 ## 1. Core Game Mechanics
 
-- **Word Length:** The default is a 5-letter word.
-- **Attempts:** The user is allowed 6 attempts to guess the word.
-- **Game Loop:** The game selects a random word from a predefined dictionary at the start of each session.
-- **Validation:** Every guessed word must exist in a valid dictionary (e.g., a list of 5-letter words).
-- **End Conditions:** The game ends when the user correctly guesses the word or runs out of attempts.
+- **Word Lengths:** 3, 4, and 5 letters — all available from v1.
+- **Attempts:** Scaled by word length:
+  - 3-letter words → 4 attempts
+  - 4-letter words → 5 attempts
+  - 5-letter words → 6 attempts
+- **Validation:** Every guess must be a real word from a kid-friendly word list. Invalid words are rejected with a shake animation.
+- **Feedback (Color Coding):**
+  - **Green (Correct):** Letter is in the correct position.
+  - **Yellow (Present):** Letter is in the word but wrong position.
+  - **Gray (Absent):** Letter is not in the word.
+  - Duplicate letter handling: each letter in the guess is evaluated against the count of that letter in the answer. Excess duplicates are marked gray.
+- **End Conditions:** The game ends when the player guesses correctly (win) or exhausts all attempts (loss).
 
 ---
 
-## 2. Feedback System (Color Coding)
+## 2. Game Flow
 
-The game must analyze each guess and provide immediate visual feedback:
+```
+Home Screen → Pick word length (3 / 4 / 5)
+  → Archive Grid (list of puzzles for that length)
+    → Tap a puzzle → Play Game Screen
+      → Win or lose → Back to Archive Grid
+```
 
-- **Green (Correct):** The letter is in the correct position.
-- **Yellow (Present):** The letter is in the word but in the wrong position.
-- **Gray (Absent):** The letter is not in the word.
+1. **Home Screen:** Three buttons to pick word length (3, 4, or 5 letters).
+2. **Archive Grid:** Shows all puzzles for the selected word length. Each puzzle is a numbered tile showing its status: locked, available, in-progress, or completed (with green/red for win/loss).
+3. **Game Screen:** The player guesses the word. On completion, they return to the archive grid.
 
----
-
-## 3. User Interface (UI)
-
-- **Game Board:** A grid of 5×6 (5 letters, 6 rows/attempts).
-- **On-Screen Keyboard:** A QWERTY-style keyboard that highlights the status of letters used across all attempts (green/yellow/gray).
-- **Animations:** Flip animation for tiles upon revealing colors and a subtle shake animation for invalid words.
-
----
-
-## 4. Technical Stack
-
-- **Mobile:** Native Android with Kotlin + Jetpack Compose.
+There is no "daily word" or "free play" mode. All gameplay is through the archive.
 
 ---
 
-## 5. Architecture — Clean Architecture + MVVM
+## 3. Archive Grid & Progression
 
-The most maintainable approach is Clean Architecture combined with MVVM. This allows swapping the UI or storage layer without touching game logic. [A1, A2]
+- Each word length has a fixed, ordered list of answer words (the puzzle archive), ordered from most common/familiar to least common — so early puzzles are easier.
+- **Batch Unlocking:** Puzzles unlock in batches (e.g., 10 at a time). The first batch is unlocked from the start. When all puzzles in a batch are completed, the next batch unlocks.
+- **Puzzle States:**
+  - 🔒 **Locked** — not yet unlocked
+  - ⬜ **Available** — unlocked but not started
+  - 🟡 **In Progress** — started but not finished
+  - ✅ **Completed (Win)** — solved
+  - ❌ **Completed (Loss)** — failed (all attempts used)
+- **Replay/Reset:** Completed puzzles (win or loss) can be replayed. Resetting clears the current attempt state and lets the player try again. The completion status resets when replayed.
 
-### Key Modules (Gradle-based Separation)
+---
 
-- **`:core:domain` (The Brain):** Pure Kotlin, zero Android dependencies. Contains the `WordleGame` class, guess validation logic, and repository interfaces.
-- **`:core:data` (The Library):** Implements dictionary and storage logic. Depends on `:domain` and handles fetching words from assets or a remote API.
-- **`:feature:game` (The UI):** Contains the ViewModel and Jetpack Compose UI. Communicates with the domain layer only via Use Cases. [A2, A4, A5, A6]
+## 4. User Interface
+
+### Game Board
+- Dynamic grid sized to word length and attempts:
+  - 3-letter: 3 columns × 4 rows
+  - 4-letter: 4 columns × 5 rows
+  - 5-letter: 5 columns × 6 rows
+- Tiles flip to reveal color feedback after each guess.
+- Invalid word → shake animation on the current row.
+
+### On-Screen Keyboard
+- Standard QWERTY layout.
+- Keys reflect cumulative letter status across all guesses (green > yellow > gray).
+- Backspace and Enter keys included.
+
+### Home Screen
+- Clean, simple layout with three large buttons for word length selection (3, 4, 5).
+- Kid-friendly design — large touch targets, clear typography.
+
+### Archive Grid
+- Scrollable grid of numbered puzzle tiles for the selected word length.
+- Visual distinction between locked, available, in-progress, and completed states.
+- Tap an available or completed puzzle to play or replay it.
+
+---
+
+## 5. Hard Mode
+
+- Available as a toggle (accessible from game screen or settings).
+- **Rules:** Any letter revealed as green must stay in that position in subsequent guesses. Any letter revealed as yellow must be included somewhere in subsequent guesses.
+- Hard mode state is per-game (can be toggled before the first guess, locked after).
+
+---
+
+## 6. Architecture
+
+Single `app` module. No multi-module structure, no DI framework, no repository interfaces.
+
+### Stack
+- **Language:** Kotlin
+- **UI:** Jetpack Compose + Material 3
+- **State Management:** ViewModel + StateFlow
+- **Persistence:** DataStore (Preferences) for game progress and archive state
+- **Navigation:** Compose Navigation (Home → Archive → Game)
+
+### Structure
+```
+app/src/main/java/com/daphle/
+├── MainActivity.kt
+├── ui/
+│   ├── theme/Theme.kt
+│   ├── home/HomeScreen.kt
+│   ├── archive/ArchiveScreen.kt
+│   └── game/GameScreen.kt
+├── game/
+│   ├── GuessEvaluator.kt       // Green/Yellow/Gray logic
+│   ├── GameState.kt            // State data classes
+│   ├── GameEngine.kt           // Game rules, state transitions
+│   └── HardModeValidator.kt    // Hard mode constraint checking
+├── data/
+│   ├── WordList.kt             // Load & query word lists from assets
+│   ├── PuzzleRepository.kt     // Archive state, puzzle progress
+│   └── GameProgressStore.kt    // DataStore persistence
+└── viewmodel/
+    ├── HomeViewModel.kt
+    ├── ArchiveViewModel.kt
+    └── GameViewModel.kt
+```
 
 ### Information Flow
-
-1. **User Action:** Player taps a key on the on-screen keyboard.
-2. **ViewModel:** UI calls `viewModel.submitGuess()`.
-3. **Use Case (Domain):** ViewModel triggers `SubmitGuessUseCase`, which asks the Repository Interface to validate the word.
-4. **Repository (Data):** The implementation (in `:data`) checks the word list.
-5. **State Update:** If valid, the Use Case updates `GameState` (an immutable Kotlin `StateFlow`).
-6. **Persistence:** The Repository saves the new state via Room or DataStore.
-7. **Reactive UI:** The UI, observing the `StateFlow`, automatically updates the grid and plays animations. [A2]
-
-### Repository Pattern for Persistence
-
-**Interface (in `:domain`):**
-```kotlin
-interface GameRepository {
-    suspend fun saveGame(state: GameState)
-    suspend fun getGame(): GameState?
-}
-```
-
-**Implementation (in `:data`):** Start with `SharedPrefsRepository`. Later, swap in a `RoomRepository` via Hilt/Koin with no changes to UI or logic code. [A2, A8]
-
-### Recommended Project Structure
-
-```
-project-root/
-├── app/                   (glue code)
-├── core/
-│   ├── domain/            (entities, use cases, repository interfaces)
-│   └── data/              (Room DB, repository implementations)
-└── features/
-    └── game/              (Compose UI, ViewModels)
-```
+1. Player taps a key on the on-screen keyboard.
+2. ViewModel updates the current guess in GameState.
+3. On Enter: GameEngine validates the word (via WordList), evaluates the guess (via GuessEvaluator), and updates GameState.
+4. StateFlow emits new state → Compose UI reacts.
+5. On game end: PuzzleRepository persists the completion status.
 
 ---
 
-## 6. Essential Features & Logic
+## 7. Word Lists
 
-- **State Management:** Track the current row (turn), the current letter, the grid contents, and the on-screen keyboard state.
-- **Input Handling:** Listen to on-screen button clicks (and optionally physical keyboard events).
-- **Word Storage:** A list of valid words for checking, and a smaller list of potential hidden answers.
+### Files
+Stored in `app/src/main/assets/`:
+- `words_3.txt` — 3-letter answer pool
+- `words_4.txt` — 4-letter answer pool
+- `words_5.txt` — 5-letter answer pool
+- `guesses_3.txt` — valid 3-letter guesses (superset of answers)
+- `guesses_4.txt` — valid 4-letter guesses (superset of answers)
+- `guesses_5.txt` — valid 5-letter guesses (superset of answers)
+
+### Sourcing & Ordering
+- Answer pools: curated from early-reader word lists, phonics/sight word lists, and common vocabulary for ages 4–7. Words should be concrete, familiar nouns, verbs, and adjectives a young child would know.
+- **Answer pool ordering:** Words are ordered from most common/familiar to least common. Puzzles are played in this order, so the earliest puzzles use the simplest, most recognizable words (e.g., "cat", "dog", "sun") and difficulty gradually increases.
+- Valid guesses: broader set of real English words at each length, so the game accepts words the child might try even if they're not in the answer pool. Guess lists are sorted alphabetically for efficient lookup.
+- All words stored lowercase, one per line.
 
 ---
 
-## Optional Customizations
+## 8. Persistence
 
-- **Word Length & Attempts:** Allow 3-letter, 4-letter, or 5-letter variations (core to Daphle).
-- **Game Modes:** Implement a "Daily Word" (similar to the original) or "Unlimited/Infinite" play.
-- **Difficulty:** "Hard Mode" where revealed hints must be used in subsequent guesses. [5, 16, 23, 24, 25]
+Using Jetpack DataStore (Preferences):
+
+- **Archive State:** For each word length, track which puzzles are completed (win/loss) and which batch is unlocked.
+- **In-Progress Game:** Save current puzzle ID, guesses made so far, and current row — so the player can leave and come back.
+- **Settings:** Hard mode toggle state.
+
+No Room database. No remote API.
 
 ---
 
-## 6. Data Requirements
+## 9. Development Approach — TDD
 
-- `words_valid.txt` (or `.json`): A list of acceptable words (~10,000+).
-- `words_answers.txt` (or `.json`): A smaller list of potential target words (~2,000–3,000). 
--  We should find through web search or create a list of the most common 3, 4, and 5-letter words to use in crating these lists.
--  We can also look at language learning, and learning-to-read apps for lists of words. Some of the current 5-letter words in the current Wordle answer list are a bit esoteric for a 4-year old.
+All game logic is built test-first. For each feature:
+1. Write failing unit tests that define expected behavior.
+2. Implement minimum code to pass.
+3. Refactor.
 
-## References
+### Test Priorities (in order)
+1. **Guess evaluation** — Green/Yellow/Gray results, duplicate letter edge cases.
+2. **Word validation** — reject non-words, accept valid words, case insensitivity.
+3. **Game state transitions** — correct guess → win, exhaust attempts → loss, track current row, enforce attempt limits per word length.
+4. **Hard mode enforcement** — confirmed green/yellow letters must be reused.
+5. **Archive/progression** — batch unlocking logic, replay/reset, persistence of completed state.
+6. **ViewModel integration** — StateFlow emissions match expected UI state after each action.
 
-### Architecture
-- [A1] https://github.com/vmadalin/android-modular-architecture
-- [A2] https://medium.com/droidstack/clean-architecture-in-android-advanced-guide-614637cd25b3
-- [A3] https://developer.android.com/studio/projects
-- [A4] https://developer.android.com/topic/architecture/recommendations
-- [A5] https://proandroiddev.com/from-monolith-to-modules-modernizing-your-android-app-architecture-2f99338e8d27
-- [A6] https://abifarhan.medium.com/modularization-in-android-development-architecting-for-scale-in-high-traffic-apps-214cf92d6a08
-- [A7] https://dev.to/artsiom_seliuzhytski/modularisation-in-android-engineering-scalable-maintainable-projects-3ff0
-- [A8] https://proandroiddev.com/android-components-architecture-in-a-modular-word-7414a0631969
+### Test Tooling
+- JUnit 5 for unit tests (pure Kotlin, no Android dependencies for game logic)
+- Domain logic lives in pure Kotlin classes testable without Robolectric
+- Compose UI testing deferred to after core logic is solid
 
-### Wordle / Game Design
-1. https://www.osiztechnologies.com/blog/wordle-clone-script
-2. https://thecodingchannel.hashnode.dev/full-tutorial-we-build-a-python-wordle-clone-discord-bot-with-disnake
-3. https://realpython.com/python-wordle-clone/
-4. https://www.freecodecamp.org/news/building-a-wordle-game/
-5. https://www.osiztechnologies.com/blog/wordle-clone-script
-6. https://medium.com/strategio/build-a-wordle-clone-in-java-c7b7b924fb8d
-7. https://www.freecodecamp.org/news/how-to-build-a-wordle-clone-using-python-and-rich/
-8. https://www.freecodecamp.org/news/build-a-wordle-clone-in-javascript/
-9. https://itnext.io/building-a-wordle-clone-using-outsystems-bd705fe6971
-10. https://www.cnet.com/tech/gaming/wordle-on-game-boy-is-fun-but-is-it-wordle-anymore/
-11. https://en.wikipedia.org/wiki/Wordle
-12. https://snap.berkeley.edu/project?user=helicoptur&project=Wordle
-13. https://www.youtube.com/watch?v=ZSWl5UwhHcs
-14. https://medium.com/@bgw26/wordle-clone-using-javascript-5593da330891
-15. https://www.reddit.com/r/wordle/comments/us3236/question_how_to_people_just_create_new_wordle/
-16. https://github.com/KSukher/Wordle-Clone
-17. https://www.reddit.com/r/AskProgrammers/comments/ybd3u5/tips_on_building_a_worldle_clone_with_0_experience/
-18. https://www.reactnativeschool.com/build-a-wordle-clone-with-react-native/
-19. https://dev.to/nexxeln/i-made-a-wordle-clone-1h9d
-20. https://www.reddit.com/r/androiddev/comments/vz4cxn/i_made_a_wordle_clone_open_source/
-21. https://www.reddit.com/r/nocode/comments/1ge9kxm/building_a_wordle_clone_in_30min_with_ai_no/
-22. https://www.reddit.com/r/react/comments/xvbok7/complexity_level_of_wordle_clone/
-23. https://www.youtube.com/watch?v=eCddp53N63E
-24. https://github.com/eternalthinker/wordle-clone
-25. https://www.siliconrepublic.com/business/wordle-online-game-twitter
+---
+
+## 10. V2 Ideas (Not in V1)
+
+- Sound effects (letter tap, win fanfare, etc.)
+- Confetti animation on win
+- Sharing / clipboard emoji export
+- Statistics screen (win rate, streak, guess distribution)
+- Hint system (reveal a letter)
+
+---
+
+## 11. Technical Stack Summary
+
+| Component | Choice |
+|-----------|--------|
+| Language | Kotlin |
+| UI | Jetpack Compose + Material 3 |
+| State | ViewModel + StateFlow |
+| Persistence | DataStore (Preferences) |
+| Navigation | Compose Navigation |
+| Testing | JUnit 5 |
+| Min SDK | 24 |
+| Target SDK | 34 |

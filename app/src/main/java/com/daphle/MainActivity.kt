@@ -4,14 +4,21 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.daphle.data.PuzzleRepository
+import com.daphle.ui.archive.ArchiveScreen
+import com.daphle.ui.game.GameScreen
+import com.daphle.ui.home.HomeScreen
 import com.daphle.ui.theme.DaphleTheme
+import com.daphle.viewmodel.ArchiveViewModel
+import com.daphle.viewmodel.GameViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,21 +26,61 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DaphleTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Text(
-                        text = "Daphle",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                DaphleApp()
             }
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun DefaultPreview() {
-    DaphleTheme {
-        Text("Daphle")
+fun DaphleApp() {
+    val navController = rememberNavController()
+    val context = LocalContext.current
+    val repository = PuzzleRepository(context)
+
+    NavHost(navController = navController, startDestination = "home") {
+
+        composable("home") {
+            HomeScreen(
+                onPickLength = { length ->
+                    navController.navigate("archive/$length")
+                },
+            )
+        }
+
+        composable(
+            route = "archive/{length}",
+            arguments = listOf(navArgument("length") { type = NavType.IntType }),
+        ) { backStackEntry ->
+            val length = backStackEntry.arguments!!.getInt("length")
+            val vm: ArchiveViewModel = viewModel(
+                factory = ArchiveViewModel.Factory(repository, length),
+            )
+            ArchiveScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+                onPuzzleTap = { puzzleIndex ->
+                    navController.navigate("game/$length/$puzzleIndex")
+                },
+            )
+        }
+
+        composable(
+            route = "game/{length}/{puzzleIndex}",
+            arguments = listOf(
+                navArgument("length") { type = NavType.IntType },
+                navArgument("puzzleIndex") { type = NavType.IntType },
+            ),
+        ) { backStackEntry ->
+            val length = backStackEntry.arguments!!.getInt("length")
+            val puzzleIndex = backStackEntry.arguments!!.getInt("puzzleIndex")
+            val vm: GameViewModel = viewModel(
+                factory = GameViewModel.Factory(repository, length, puzzleIndex),
+            )
+            GameScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+            )
+        }
     }
 }
