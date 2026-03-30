@@ -19,6 +19,7 @@ import com.daphle.ui.home.HomeScreen
 import com.daphle.ui.theme.DaphleTheme
 import com.daphle.viewmodel.ArchiveViewModel
 import com.daphle.viewmodel.GameViewModel
+import com.daphle.viewmodel.HomeViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,7 +42,11 @@ fun DaphleApp() {
     NavHost(navController = navController, startDestination = "home") {
 
         composable("home") {
+            val vm: HomeViewModel = viewModel(
+                factory = HomeViewModel.Factory(repository)
+            )
             HomeScreen(
+                viewModel = vm,
                 onPickLength = { length ->
                     navController.navigate("archive/$length")
                 },

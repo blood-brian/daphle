@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -99,15 +98,6 @@ fun GameScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    val hardMode = uiState?.hardMode ?: false
-                    Button(
-                        onClick = { viewModel.toggleHardMode() },
-                        modifier = Modifier.padding(end = 8.dp),
-                    ) {
-                        Text(if (hardMode) "Hard ✓" else "Hard")
                     }
                 },
             )
