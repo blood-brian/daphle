@@ -39,7 +39,8 @@ private val RainbowColors = listOf(
     Color(0xFFFFCA3A), // Yellow
     Color(0xFF8AC926), // Green
     Color(0xFF1982C4), // Blue
-    Color(0xFF6A4C93)  // Purple
+    Color(0xFF6A4C93), // Purple
+    Color(0xFFFF70A6)  // Pink
 )
 
 @Composable

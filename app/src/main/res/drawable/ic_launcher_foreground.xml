@@ -4,7 +4,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- The White Square -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M38,38h32v32h-32z" />
+    <!-- The Letter D -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M46,44v20h6c5.5,0 10,-4.5 10,-10s-4.5,-10 -10,-10h-6z M50,48h2c3.3,0 6,2.7 6,6s-2.7,6 -6,6h-2v-12z" />
 </vector>
