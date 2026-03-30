@@ -304,7 +304,7 @@ private fun KeyboardKey(
         null -> Color(0xFFD3D6DA)
     }
     val fg = if (result != null) Color.White else Color(0xFF333333)
-    val width = if (isWide) 52.dp else 34.dp
+    val width = if (isWide) 64.dp else 34.dp
 
     Box(
         modifier = Modifier
@@ -319,8 +319,11 @@ private fun KeyboardKey(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = char.toString(),
-            fontSize = if (isWide) 14.sp else 16.sp,
+            text = when (char) {
+                '↵' -> "ENTER"
+                else -> char.toString()
+            },
+            fontSize = if (isWide) 12.sp else 16.sp,
             fontWeight = FontWeight.Bold,
             color = fg,
         )
