@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +33,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.daphle.viewmodel.HomeViewModel
 
+private val RainbowColors = listOf(
+    Color(0xFFFF595E), // Red
+    Color(0xFFFF924C), // Orange
+    Color(0xFFFFCA3A), // Yellow
+    Color(0xFF8AC926), // Green
+    Color(0xFF1982C4), // Blue
+    Color(0xFF6A4C93)  // Purple
+)
+
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -41,7 +51,7 @@ fun HomeScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
+        color = Color(0xFFF8F9FA), // Very light gray background to make colors pop
     ) {
         Column(
             modifier = Modifier
@@ -50,38 +60,56 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = "Daphle",
-                fontSize = 56.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            // Rainbow Title
+            Row {
+                "Daphle".forEachIndexed { index, char ->
+                    Text(
+                        text = char.toString(),
+                        fontSize = 64.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = RainbowColors[index % RainbowColors.size]
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Pick a word length to play!",
-                fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF4A4A4A),
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Hard Mode Toggle
+            // Colorful Hard Mode Toggle
             Button(
                 onClick = { viewModel.toggleHardMode() },
-                modifier = Modifier.padding(bottom = 32.dp)
+                modifier = Modifier
+                    .padding(bottom = 32.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (hardMode) Color(0xFF6AAA64) else Color(0xFF787C7E),
+                    contentColor = Color.White
+                )
             ) {
-                Text(if (hardMode) "Hard Mode: ON ✓" else "Hard Mode: OFF")
+                Text(
+                    text = if (hardMode) "HARD MODE: ON ✓" else "HARD MODE: OFF",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
             }
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(32.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                listOf(3, 4, 5).forEach { length ->
+                listOf(3, 4, 5).forEachIndexed { index, length ->
                     LengthSelector(
                         length = length,
+                        startIndex = if (length == 3) 0 else if (length == 4) 2 else 4,
                         onClick = { onPickLength(length) },
                     )
                 }
@@ -91,40 +119,41 @@ fun HomeScreen(
 }
 
 @Composable
-private fun LengthSelector(length: Int, onClick: () -> Unit) {
+private fun LengthSelector(length: Int, startIndex: Int, onClick: () -> Unit) {
     val haptic = LocalHapticFeedback.current
     Surface(
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onClick()
         },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .shadow(8.dp, RoundedCornerShape(20.dp))
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(length) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                repeat(length) { i ->
+                    val colorIndex = (startIndex + i) % RainbowColors.size
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color.White)
-                            .border(2.dp, Color(0xFFCCCCCC), RoundedCornerShape(6.dp))
+                            .size(54.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(RainbowColors[colorIndex].copy(alpha = 0.15f))
+                            .border(3.dp, RainbowColors[colorIndex], RoundedCornerShape(8.dp))
                     )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "$length LETTERS",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF333333)
             )
         }
     }
