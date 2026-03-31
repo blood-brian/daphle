@@ -2,3 +2,4 @@
 2. we need to add plural 4 letter words to the 5 letter guess list moth -> moths
 3. lets add a button that you can click to go back to the game selection menu once you either solve a puzzle or run out of guesses.
 4. when clicking on an already completed game, open a dialog that presents two options: replay or view solution.
+5. animation should flip tiles one by one instead of all at once.
