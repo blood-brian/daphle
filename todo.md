@@ -1,9 +1,9 @@
 # Todo
 
 - [x] ~~1. There seems to be a bug in the 3s and 4s at least where the games repeat instead of showing a new game. Can we add some e2e tests? what is the standard way of doing that in android?~~
-- [ ] 2. we need to add plural 4 letter words to the 5 letter guess list moth -> moths
-- [ ] 3. lets add a button that you can click to go back to the game selection menu once you either solve a puzzle or run out of guesses.
-- [ ] 4. when clicking on an already completed game, open a dialog that presents two options: replay or view solution.
+- [x] ~~2. we need to add plural 4 letter words to the 5 letter guess list moth -> moths~~
+- [x] ~~3. lets add a button that you can click to go back to the game selection menu once you either solve a puzzle or run out of guesses.~~
+- [x] ~~4. when clicking on an already completed game, open a dialog that presents two options: replay or view solution.~~
 - [ ] 5. animation should flip tiles one by one instead of all at once.
-- [ ] 6. extend the valid guess lists to include more esoteric words, like "raddy"
+- [x] ~~6. extend the valid guess lists to include more esoteric words, like "raddy"~~
 - [ ] 7. let's add a feature where clicking on a word, looks up the definition and add a voice mode where clicking on the defintion reads it out loud.
