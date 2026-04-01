@@ -227,7 +227,7 @@ private fun GuessGrid(
                         }
                     }
                     val revealed = row < guesses.size
-                    LetterTile(letter = letter, result = result, revealed = revealed, size = tileSize)
+                    LetterTile(letter = letter, result = result, revealed = revealed, size = tileSize, flipDelayMillis = col * 300)
                 }
             }
         }
@@ -240,10 +240,11 @@ private fun LetterTile(
     result: LetterResult?,
     revealed: Boolean,
     size: Dp,
+    flipDelayMillis: Int = 0,
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (revealed) 180f else 0f,
-        animationSpec = tween(durationMillis = 300),
+        animationSpec = tween(durationMillis = 300, delayMillis = flipDelayMillis),
         label = "tile_flip",
     )
 
