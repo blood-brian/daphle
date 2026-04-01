@@ -19,6 +19,8 @@ class ArchiveViewModel(
     val puzzles = repository.puzzlesFlow(wordLength)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    fun answerAt(index: Int): String = repository.answerAt(wordLength, index)
+
     fun onPuzzleCompleted(index: Int, won: Boolean) {
         viewModelScope.launch {
             val result = if (won) PuzzleResult.WIN else PuzzleResult.LOSS
