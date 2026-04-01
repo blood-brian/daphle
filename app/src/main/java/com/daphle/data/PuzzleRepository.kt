@@ -61,6 +61,16 @@ class PuzzleRepository(context: Context) {
         return store.inProgressFlow(word)
     }
 
+    suspend fun saveCompletedGuesses(length: Int, index: Int, guesses: List<String>) {
+        val word = answerAt(length, index)
+        store.saveCompletedGuesses(word, guesses)
+    }
+
+    fun completedGuessesFlow(length: Int, index: Int): Flow<List<String>> {
+        val word = answerAt(length, index)
+        return store.completedGuessesFlow(word)
+    }
+
     fun unlockedBatchFlow(length: Int) = store.unlockedBatchFlow(length)
 
     suspend fun unlockNextBatch(length: Int) = store.unlockNextBatch(length)

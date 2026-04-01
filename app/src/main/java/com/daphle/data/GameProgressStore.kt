@@ -31,6 +31,9 @@ class GameProgressStore(private val context: Context) {
         private fun inProgressGuessesKey(word: String) =
             stringPreferencesKey("in_progress_guesses_${word.uppercase()}")
 
+        private fun completedGuessesKey(word: String) =
+            stringPreferencesKey("completed_guesses_${word.uppercase()}")
+
         private fun unlockedBatchKey(length: Int) =
             intPreferencesKey("unlocked_batch_$length")
     }
@@ -65,6 +68,20 @@ class GameProgressStore(private val context: Context) {
                     }
                 }
             }
+        }
+
+    // ----- Completed game guesses -----
+
+    suspend fun saveCompletedGuesses(word: String, guesses: List<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[completedGuessesKey(word)] = guesses.joinToString(",")
+        }
+    }
+
+    fun completedGuessesFlow(word: String): Flow<List<String>> =
+        context.dataStore.data.map { prefs ->
+            val raw = prefs[completedGuessesKey(word)] ?: return@map emptyList()
+            if (raw.isBlank()) emptyList() else raw.split(",")
         }
 
     // ----- Unlocked batches -----

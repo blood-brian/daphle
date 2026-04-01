@@ -19,6 +19,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -59,6 +60,47 @@ class GameViewModelTest {
         assertNotNull(state)
         assertEquals(1, state?.gameState?.guesses?.size)
         assertEquals("DOG", state?.gameState?.guesses?.get(0)?.word)
+        assertEquals(GameStatus.IN_PROGRESS, state?.gameState?.status)
+    }
+
+    @Test
+    fun `viewOnly=true loads completed guesses instead of in-progress`() = runTest {
+        val wordLength = 3
+        val puzzleIndex = 0
+        val targetWord = "CAT"
+
+        whenever(repository.answerAt(wordLength, puzzleIndex)).thenReturn(targetWord)
+        whenever(repository.hardModeFlow()).thenReturn(flowOf(false))
+        whenever(repository.isValidGuess(any(), any())).thenReturn(true)
+        whenever(repository.inProgressFlow(wordLength, puzzleIndex)).thenReturn(flowOf(emptyList()))
+        whenever(repository.completedGuessesFlow(wordLength, puzzleIndex)).thenReturn(flowOf(listOf("DOG", "CAT")))
+
+        val viewModel = GameViewModel(repository, wordLength, puzzleIndex, viewOnly = true)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.first()
+        assertNotNull(state)
+        assertEquals(2, state?.gameState?.guesses?.size)
+        assertEquals("DOG", state?.gameState?.guesses?.get(0)?.word)
+        assertEquals("CAT", state?.gameState?.guesses?.get(1)?.word)
+        assertEquals(GameStatus.WON, state?.gameState?.status)
+    }
+
+    @Test
+    fun `viewOnly=false does not load completed guesses`() = runTest {
+        val wordLength = 3
+        val puzzleIndex = 0
+        val targetWord = "CAT"
+
+        whenever(repository.answerAt(wordLength, puzzleIndex)).thenReturn(targetWord)
+        whenever(repository.hardModeFlow()).thenReturn(flowOf(false))
+        whenever(repository.inProgressFlow(wordLength, puzzleIndex)).thenReturn(flowOf(emptyList()))
+
+        val viewModel = GameViewModel(repository, wordLength, puzzleIndex, viewOnly = false)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.first()
+        assertEquals(0, state?.gameState?.guesses?.size)
         assertEquals(GameStatus.IN_PROGRESS, state?.gameState?.status)
     }
 

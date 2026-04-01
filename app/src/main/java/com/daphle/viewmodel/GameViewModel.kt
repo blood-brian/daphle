@@ -10,11 +10,13 @@ import com.daphle.game.GameState
 import com.daphle.game.GameStatus
 import com.daphle.game.GuessResult
 import com.daphle.game.LetterResult
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class GameUiState(
     val gameState: GameState,
@@ -28,6 +30,7 @@ class GameViewModel(
     private val repository: PuzzleRepository,
     val wordLength: Int,
     val puzzleIndex: Int,
+    val viewOnly: Boolean = false,
 ) : ViewModel() {
 
     private val targetWord = repository.answerAt(wordLength, puzzleIndex)
@@ -45,9 +48,13 @@ class GameViewModel(
                 hardMode = hardMode,
             )
 
-            // Restore in-progress guesses for THIS specific puzzle
-            val inProgressGuesses = repository.inProgressFlow(wordLength, puzzleIndex).first()
-            inProgressGuesses.forEach { engine.submitGuess(it) }
+            // Restore guesses: completed guesses when viewing solution, in-progress otherwise
+            val guessesToRestore = if (viewOnly) {
+                repository.completedGuessesFlow(wordLength, puzzleIndex).first()
+            } else {
+                repository.inProgressFlow(wordLength, puzzleIndex).first()
+            }
+            guessesToRestore.forEach { engine.submitGuess(it) }
 
             _uiState.value = GameUiState(
                 gameState = engine.currentState,
@@ -93,20 +100,24 @@ class GameViewModel(
                     keyboardColors = computeKeyboardColors(newState),
                 )
                 viewModelScope.launch {
-                    if (newState.status == GameStatus.IN_PROGRESS) {
-                        repository.saveInProgress(
-                            wordLength,
-                            puzzleIndex,
-                            newState.guesses.map { it.word },
-                        )
-                    } else {
-                        repository.clearInProgress(wordLength, puzzleIndex)
-                        repository.saveCompletion(
-                            wordLength,
-                            puzzleIndex,
-                            if (newState.status == GameStatus.WON) PuzzleResult.WIN else PuzzleResult.LOSS,
-                        )
-                        checkAndUnlockNextBatch()
+                    withContext(NonCancellable) {
+                        if (newState.status == GameStatus.IN_PROGRESS) {
+                            repository.saveInProgress(
+                                wordLength,
+                                puzzleIndex,
+                                newState.guesses.map { it.word },
+                            )
+                        } else {
+                            val guesses = newState.guesses.map { it.word }
+                            repository.clearInProgress(wordLength, puzzleIndex)
+                            repository.saveCompletedGuesses(wordLength, puzzleIndex, guesses)
+                            repository.saveCompletion(
+                                wordLength,
+                                puzzleIndex,
+                                if (newState.status == GameStatus.WON) PuzzleResult.WIN else PuzzleResult.LOSS,
+                            )
+                            checkAndUnlockNextBatch()
+                        }
                     }
                 }
             }
@@ -174,9 +185,10 @@ class GameViewModel(
         private val repository: PuzzleRepository,
         private val wordLength: Int,
         private val puzzleIndex: Int,
+        private val viewOnly: Boolean = false,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            GameViewModel(repository, wordLength, puzzleIndex) as T
+            GameViewModel(repository, wordLength, puzzleIndex, viewOnly) as T
     }
 }

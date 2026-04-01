@@ -53,42 +53,34 @@ fun ArchiveScreen(
     viewModel: ArchiveViewModel,
     onBack: () -> Unit,
     onPuzzleTap: (puzzleIndex: Int) -> Unit,
+    onViewSolution: (puzzleIndex: Int) -> Unit,
 ) {
     val puzzles by viewModel.puzzles.collectAsState()
     val haptic = LocalHapticFeedback.current
 
     var dialogPuzzle by remember { mutableStateOf<PuzzleInfo?>(null) }
-    var showingAnswer by remember { mutableStateOf(false) }
 
     // Completed puzzle dialog
     dialogPuzzle?.let { puzzle ->
-        if (!showingAnswer) {
-            AlertDialog(
-                onDismissRequest = { dialogPuzzle = null },
-                title = { Text("Puzzle #${puzzle.index + 1}") },
-                text = {
-                    Text(if (puzzle.result == PuzzleResult.WIN) "You solved it! 🎉" else "Better luck next time!")
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        dialogPuzzle = null
-                        onPuzzleTap(puzzle.index)
-                    }) { Text("Play Again") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showingAnswer = true }) { Text("View Solution") }
-                },
-            )
-        } else {
-            AlertDialog(
-                onDismissRequest = { dialogPuzzle = null; showingAnswer = false },
-                title = { Text("Puzzle #${puzzle.index + 1}") },
-                text = { Text("The word was ${viewModel.answerAt(puzzle.index).uppercase()}") },
-                confirmButton = {
-                    TextButton(onClick = { dialogPuzzle = null; showingAnswer = false }) { Text("OK") }
-                },
-            )
-        }
+        AlertDialog(
+            onDismissRequest = { dialogPuzzle = null },
+            title = { Text("Puzzle #${puzzle.index + 1}") },
+            text = {
+                Text(if (puzzle.result == PuzzleResult.WIN) "You solved it! 🎉" else "Better luck next time!")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    dialogPuzzle = null
+                    onPuzzleTap(puzzle.index)
+                }) { Text("Play Again") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    dialogPuzzle = null
+                    onViewSolution(puzzle.index)
+                }) { Text("View Solution") }
+            },
+        )
     }
 
     // Handle horizontal swipe to go back
@@ -139,7 +131,6 @@ fun ArchiveScreen(
                         if (!puzzle.isUnlocked) return@PuzzleTile
                         if (puzzle.result == PuzzleResult.WIN || puzzle.result == PuzzleResult.LOSS) {
                             dialogPuzzle = puzzle
-                            showingAnswer = false
                         } else {
                             onPuzzleTap(puzzle.index)
                         }

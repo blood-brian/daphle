@@ -67,20 +67,25 @@ fun DaphleApp() {
                 onPuzzleTap = { puzzleIndex ->
                     navController.navigate("game/$length/$puzzleIndex")
                 },
+                onViewSolution = { puzzleIndex ->
+                    navController.navigate("game/$length/$puzzleIndex?viewOnly=true")
+                },
             )
         }
 
         composable(
-            route = "game/{length}/{puzzleIndex}",
+            route = "game/{length}/{puzzleIndex}?viewOnly={viewOnly}",
             arguments = listOf(
                 navArgument("length") { type = NavType.IntType },
                 navArgument("puzzleIndex") { type = NavType.IntType },
+                navArgument("viewOnly") { type = NavType.BoolType; defaultValue = false },
             ),
         ) { backStackEntry ->
             val length = backStackEntry.arguments!!.getInt("length")
             val puzzleIndex = backStackEntry.arguments!!.getInt("puzzleIndex")
+            val viewOnly = backStackEntry.arguments!!.getBoolean("viewOnly")
             val vm: GameViewModel = viewModel(
-                factory = GameViewModel.Factory(repository, length, puzzleIndex),
+                factory = GameViewModel.Factory(repository, length, puzzleIndex, viewOnly),
             )
             GameScreen(
                 viewModel = vm,
