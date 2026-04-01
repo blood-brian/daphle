@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -125,6 +126,13 @@ fun GameScreen(
                     won = state.gameState.status == GameStatus.WON,
                     answer = state.gameState.targetWord,
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onBack()
+                }) {
+                    Text("Back to Menu")
+                }
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
