@@ -3,10 +3,10 @@ package com.daphle.e2e
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.daphle.MainActivity
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,37 +31,90 @@ class GameFlowE2ETest {
 
     @Test
     fun completingPuzzle1_thenOpeningPuzzle2_showsDifferentGame() {
-        // Home screen: pick 3-letter words
+        // Use completePuzzle1() to ensure puzzle #1 is done (handles prior test state)
+        completePuzzle1()
+
+        // Archive screen: open Puzzle #2 (not yet completed, navigates directly)
+        composeRule.onNodeWithText("2").performClick()
+
+        // Verify we're on Puzzle #2 — a different game
+        composeRule.onNodeWithText("Puzzle #2 · 3 letters").assertIsDisplayed()
+    }
+
+    @Test
+    fun tappingCompletedPuzzle_showsDialogInsteadOfNavigating() {
+        completePuzzle1()
+
+        // Tap Puzzle #1 (now completed) — dialog should appear, not the game screen
+        composeRule.onNodeWithText("1").performClick()
+
+        composeRule.onNodeWithText("Puzzle #1").assertIsDisplayed()
+        composeRule.onNodeWithText("Play Again").assertIsDisplayed()
+        composeRule.onNodeWithText("View Solution").assertIsDisplayed()
+        // Should NOT have navigated to the game screen
+        assertTrue(composeRule.onAllNodesWithText("Puzzle #1 · 3 letters").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun completedPuzzleDialog_playAgain_navigatesToGame() {
+        completePuzzle1()
+
+        composeRule.onNodeWithText("1").performClick()
+        composeRule.onNodeWithText("Play Again").performClick()
+
+        composeRule.onNodeWithText("Puzzle #1 · 3 letters").assertIsDisplayed()
+    }
+
+    @Test
+    fun completedPuzzleDialog_viewSolution_showsAnswerWord() {
+        completePuzzle1()
+
+        composeRule.onNodeWithText("1").performClick()
+        composeRule.onNodeWithText("View Solution").performClick()
+
+        // Answer for puzzle index 0 is "the"
+        composeRule.onNodeWithText("The word was THE").assertIsDisplayed()
+    }
+
+    @Test
+    fun completedPuzzleDialog_dismissOnOk_closesDialog() {
+        completePuzzle1()
+
+        composeRule.onNodeWithText("1").performClick()
+        composeRule.onNodeWithText("View Solution").performClick()
+        composeRule.onNodeWithText("OK").performClick()
+
+        assertTrue(composeRule.onAllNodesWithText("The word was THE").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithText("Play Again").fetchSemanticsNodes().isEmpty())
+    }
+
+    /**
+     * Ensures puzzle #1 ("the") is completed and leaves the UI on the 3-letter archive screen.
+     * Idempotent: if the puzzle is already completed (DataStore persists between tests), skips
+     * gameplay and just navigates to the archive screen.
+     */
+    private fun completePuzzle1() {
         composeRule.onNodeWithText("3 LETTERS").performClick()
 
-        // Archive screen: open Puzzle #1
-        composeRule.onNodeWithText("1").performClick()
-        composeRule.onNodeWithText("Puzzle #1 · 3 letters").assertIsDisplayed()
+        // If puzzle #1 is already marked with ✓ (won), skip completing it again.
+        val alreadyDone = composeRule.onAllNodesWithText("✓").fetchSemanticsNodes().isNotEmpty()
+        if (alreadyDone) return
 
-        // Wait for the ViewModel to finish loading (keyboard renders after state is non-null)
+        composeRule.onNodeWithText("1").performClick()
+
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodesWithText("ENTER").fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Type the correct answer: T-H-E
         composeRule.onNodeWithText("T").performClick()
         composeRule.onNodeWithText("H").performClick()
         composeRule.onNodeWithText("E").performClick()
         composeRule.onNodeWithText("ENTER").performClick()
 
-        // Win banner should appear
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodesWithText("You got it! \uD83C\uDF89").fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText("You got it! \uD83C\uDF89").assertIsDisplayed()
 
-        // Go back to archive
-        composeRule.onNodeWithContentDescription("Back").performClick()
-
-        // Archive screen: open Puzzle #2
-        composeRule.onNodeWithText("2").performClick()
-
-        // Verify we're on Puzzle #2 — a different game
-        composeRule.onNodeWithText("Puzzle #2 · 3 letters").assertIsDisplayed()
+        composeRule.onNodeWithText("Back to Menu").performClick()
     }
 }
