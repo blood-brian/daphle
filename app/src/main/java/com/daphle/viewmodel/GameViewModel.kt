@@ -3,6 +3,8 @@ package com.daphle.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.daphle.data.DefinitionRepository
+import com.daphle.data.DefinitionResult
 import com.daphle.data.PuzzleRepository
 import com.daphle.data.PuzzleResult
 import com.daphle.game.GameEngine
@@ -24,6 +26,7 @@ data class GameUiState(
     val errorMessage: String? = null,
     val keyboardColors: Map<Char, LetterResult> = emptyMap(),
     val hardMode: Boolean = false,
+    val definitionResult: DefinitionResult? = null,
 )
 
 class GameViewModel(
@@ -31,6 +34,7 @@ class GameViewModel(
     val wordLength: Int,
     val puzzleIndex: Int,
     val viewOnly: Boolean = false,
+    private val definitionRepository: DefinitionRepository = DefinitionRepository(),
 ) : ViewModel() {
 
     private val targetWord = repository.answerAt(wordLength, puzzleIndex)
@@ -131,6 +135,20 @@ class GameViewModel(
         _uiState.value = _uiState.value?.copy(errorMessage = null)
     }
 
+    fun onWordTapped(word: String) {
+        _uiState.value = _uiState.value?.copy(
+            definitionResult = DefinitionResult.Loading(word),
+        )
+        viewModelScope.launch {
+            val result = definitionRepository.getDefinition(word)
+            _uiState.value = _uiState.value?.copy(definitionResult = result)
+        }
+    }
+
+    fun dismissDefinition() {
+        _uiState.value = _uiState.value?.copy(definitionResult = null)
+    }
+
     fun toggleHardMode() {
         val state = _uiState.value ?: return
         // Can only toggle before first guess
@@ -186,9 +204,10 @@ class GameViewModel(
         private val wordLength: Int,
         private val puzzleIndex: Int,
         private val viewOnly: Boolean = false,
+        private val definitionRepository: DefinitionRepository = DefinitionRepository(),
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            GameViewModel(repository, wordLength, puzzleIndex, viewOnly) as T
+            GameViewModel(repository, wordLength, puzzleIndex, viewOnly, definitionRepository) as T
     }
 }

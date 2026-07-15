@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.daphle.game.EvaluatedGuess
 import com.daphle.game.GameStatus
 import com.daphle.game.LetterResult
+import com.daphle.data.DefinitionResult
 import com.daphle.viewmodel.GameUiState
 import com.daphle.viewmodel.GameViewModel
 
@@ -65,6 +66,7 @@ fun GameScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
+    val ttsState = rememberTextToSpeech()
 
     // Handle horizontal swipe to go back
     var totalDrag by remember { mutableFloatStateOf(0f) }
@@ -144,7 +146,17 @@ fun GameScreen(
                 currentInput = state.currentInput,
                 currentRow = state.gameState.guesses.size,
                 gameOver = state.gameState.status != GameStatus.IN_PROGRESS,
+                onWordTapped = { viewModel.onWordTapped(it) },
             )
+
+            // Definition bottom sheet
+            if (state.definitionResult != null) {
+                DefinitionBottomSheet(
+                    result = state.definitionResult,
+                    onDismiss = { viewModel.dismissDefinition() },
+                    onSpeak = { ttsState.speak(it) },
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -196,6 +208,7 @@ private fun GuessGrid(
     currentInput: String,
     currentRow: Int,
     gameOver: Boolean,
+    onWordTapped: (String) -> Unit = {},
 ) {
     val tileSize = when (wordLength) {
         3 -> 72.dp
@@ -208,7 +221,14 @@ private fun GuessGrid(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         repeat(maxAttempts) { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = if (row < guesses.size) {
+                    Modifier.clickable { onWordTapped(guesses[row].word) }
+                } else {
+                    Modifier
+                },
+            ) {
                 repeat(wordLength) { col ->
                     val letter: Char?
                     val result: LetterResult?

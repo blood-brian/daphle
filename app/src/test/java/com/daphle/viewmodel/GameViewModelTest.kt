@@ -1,5 +1,8 @@
 package com.daphle.viewmodel
 
+import com.daphle.data.DefinitionRepository
+import com.daphle.data.DefinitionResult
+import com.daphle.data.WordDefinition
 import com.daphle.data.PuzzleRepository
 import com.daphle.data.PuzzleResult
 import com.daphle.game.GameStatus
@@ -20,6 +23,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -28,11 +32,13 @@ class GameViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: PuzzleRepository
+    private lateinit var definitionRepository: DefinitionRepository
 
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = mock()
+        definitionRepository = mock()
     }
 
     @AfterEach
@@ -124,5 +130,67 @@ class GameViewModelTest {
 
         val state = viewModel.uiState.first()
         assertEquals(0, state?.gameState?.guesses?.size)
+    }
+
+    // -------------------------------------------------------
+    // Definition lookup tests
+    // -------------------------------------------------------
+
+    private suspend fun createViewModelWithDefinitions(): GameViewModel {
+        whenever(repository.answerAt(3, 0)).thenReturn("CAT")
+        whenever(repository.hardModeFlow()).thenReturn(flowOf(false))
+        whenever(repository.inProgressFlow(3, 0)).thenReturn(flowOf(emptyList()))
+        return GameViewModel(repository, 3, 0, definitionRepository = definitionRepository)
+    }
+
+    @Test
+    fun `onWordTapped sets definitionResult to Success after loading`() = runTest {
+        val defs = listOf(WordDefinition("noun", "A small domesticated feline mammal."))
+        whenever(definitionRepository.getDefinition("cat"))
+            .thenReturn(DefinitionResult.Success("cat", defs))
+
+        val viewModel = createViewModelWithDefinitions()
+        advanceUntilIdle()
+
+        viewModel.onWordTapped("cat")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.first()
+        assertTrue(state?.definitionResult is DefinitionResult.Success)
+        val success = state?.definitionResult as DefinitionResult.Success
+        assertEquals("cat", success.word)
+        assertEquals(defs, success.definitions)
+    }
+
+    @Test
+    fun `onWordTapped sets definitionResult to Error on failure`() = runTest {
+        whenever(definitionRepository.getDefinition("dog"))
+            .thenReturn(DefinitionResult.Error("dog", "No internet"))
+
+        val viewModel = createViewModelWithDefinitions()
+        advanceUntilIdle()
+
+        viewModel.onWordTapped("dog")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.first()
+        assertTrue(state?.definitionResult is DefinitionResult.Error)
+    }
+
+    @Test
+    fun `dismissDefinition clears definitionResult`() = runTest {
+        val defs = listOf(WordDefinition("noun", "A small domesticated feline mammal."))
+        whenever(definitionRepository.getDefinition("cat"))
+            .thenReturn(DefinitionResult.Success("cat", defs))
+
+        val viewModel = createViewModelWithDefinitions()
+        advanceUntilIdle()
+
+        viewModel.onWordTapped("cat")
+        advanceUntilIdle()
+        assertNotNull(viewModel.uiState.first()?.definitionResult)
+
+        viewModel.dismissDefinition()
+        assertNull(viewModel.uiState.first()?.definitionResult)
     }
 }

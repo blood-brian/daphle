@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.daphle.data.DefinitionRepository
 import com.daphle.data.PuzzleRepository
 import com.daphle.ui.archive.ArchiveScreen
 import com.daphle.ui.game.GameScreen
@@ -38,6 +39,7 @@ fun DaphleApp() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val repository = PuzzleRepository(context)
+    val definitionRepository = DefinitionRepository()
 
     NavHost(navController = navController, startDestination = "home") {
 
@@ -85,7 +87,7 @@ fun DaphleApp() {
             val puzzleIndex = backStackEntry.arguments!!.getInt("puzzleIndex")
             val viewOnly = backStackEntry.arguments!!.getBoolean("viewOnly")
             val vm: GameViewModel = viewModel(
-                factory = GameViewModel.Factory(repository, length, puzzleIndex, viewOnly),
+                factory = GameViewModel.Factory(repository, length, puzzleIndex, viewOnly, definitionRepository),
             )
             GameScreen(
                 viewModel = vm,
