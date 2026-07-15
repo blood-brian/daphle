@@ -2,6 +2,8 @@ package com.daphle.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +60,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -111,10 +114,10 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                listOf(3, 4, 5).forEachIndexed { index, length ->
+                listOf(3, 4, 5, 6).forEach { length ->
                     LengthSelector(
                         length = length,
-                        startIndex = if (length == 3) 0 else if (length == 4) 2 else 4,
+                        startIndex = (length - 3) * 2,
                         onClick = { onPickLength(length) },
                     )
                 }
@@ -141,12 +144,14 @@ private fun LengthSelector(length: Int, startIndex: Int, onClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(20.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val boxSize = if (length >= 6) 38.dp else 54.dp
+            val boxSpacing = if (length >= 6) 8.dp else 10.dp
+            Row(horizontalArrangement = Arrangement.spacedBy(boxSpacing)) {
                 repeat(length) { i ->
                     val colorIndex = (startIndex + i) % RainbowColors.size
                     Box(
                         modifier = Modifier
-                            .size(54.dp)
+                            .size(boxSize)
                             .clip(RoundedCornerShape(8.dp))
                             .background(RainbowColors[colorIndex].copy(alpha = 0.15f))
                             .border(3.dp, RainbowColors[colorIndex], RoundedCornerShape(8.dp))

@@ -213,7 +213,8 @@ private fun GuessGrid(
     val tileSize = when (wordLength) {
         3 -> 72.dp
         4 -> 64.dp
-        else -> 56.dp
+        5 -> 56.dp
+        else -> 48.dp
     }
 
     Column(
